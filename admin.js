@@ -1,0 +1,460 @@
+import products from './products.js';
+
+/**
+ * Urban Drip - Admin Dashboard & Parser Bot
+ */
+
+// Globals
+let currentImageBase64 = "";
+let customProducts = [];
+
+// DOM Elements
+const rawMessageInput = document.getElementById("raw-message");
+const btnParseMessage = document.getElementById("btn-parse-message");
+
+const productImageFile = document.getElementById("product-image-file");
+const imageDragArea = document.getElementById("image-drag-area");
+const imagePlaceholder = document.getElementById("image-placeholder");
+const imagePreview = document.getElementById("image-preview");
+
+const productForm = document.getElementById("product-form");
+const productNameInput = document.getElementById("product-name");
+const productCategorySelect = document.getElementById("product-category");
+const productPriceInput = document.getElementById("product-price");
+const productNumericPriceInput = document.getElementById("product-numeric-price");
+const productDescriptionInput = document.getElementById("product-description");
+
+const specsListContainer = document.getElementById("specs-list-container");
+const btnAddSpec = document.getElementById("btn-add-spec");
+const btnDownloadDatabase = document.getElementById("btn-download-database");
+const btnClearAll = document.getElementById("btn-clear-all");
+const inventoryTableBody = document.getElementById("inventory-table-body");
+
+// Default Placeholder Image
+const DEFAULT_PLACEHOLDER_IMG = "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80";
+
+/**
+ * Initialize Dashboard
+ */
+function init() {
+  loadCustomProducts();
+  renderInventoryTable();
+  setupEventListeners();
+  addSpecRow("", ""); // Add one empty spec row by default
+}
+
+/**
+ * Load products from localStorage
+ */
+function loadCustomProducts() {
+  const stored = localStorage.getItem("ud_custom_products");
+  if (stored) {
+    try {
+      customProducts = JSON.parse(stored);
+    } catch (e) {
+      console.error("Failed to parse custom products", e);
+      customProducts = [];
+    }
+  } else {
+    customProducts = [];
+  }
+}
+
+/**
+ * Save products to localStorage
+ */
+function saveCustomProducts() {
+  localStorage.setItem("ud_custom_products", JSON.stringify(customProducts));
+  renderInventoryTable();
+}
+
+/**
+ * Setup Interaction Event Listeners
+ */
+function setupEventListeners() {
+  // Parsing trigger
+  btnParseMessage.addEventListener("click", runMessageParserBot);
+
+  // Specs trigger
+  btnAddSpec.addEventListener("click", () => addSpecRow("", ""));
+
+  // Image Drag & Drop triggers
+  imageDragArea.addEventListener("click", () => productImageFile.click());
+  imageDragArea.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    imageDragArea.style.borderColor = "var(--accent-gold)";
+    imageDragArea.style.background = "var(--accent-gold-glow)";
+  });
+  imageDragArea.addEventListener("dragleave", () => {
+    imageDragArea.style.borderColor = "var(--border-light)";
+    imageDragArea.style.background = "transparent";
+  });
+  imageDragArea.addEventListener("drop", (e) => {
+    e.preventDefault();
+    imageDragArea.style.borderColor = "var(--border-light)";
+    imageDragArea.style.background = "transparent";
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleProductImage(e.dataTransfer.files[0]);
+    }
+  });
+
+  productImageFile.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) {
+      handleProductImage(e.target.files[0]);
+    }
+  });
+
+  // Submit Uploader Form
+  productForm.addEventListener("submit", handleFormSubmit);
+
+  // Clear Custom Products database
+  btnClearAll.addEventListener("click", () => {
+    if (confirm("Are you sure you want to delete all custom products from localStorage?")) {
+      customProducts = [];
+      saveCustomProducts();
+    }
+  });
+
+  // Download compiled database file
+  btnDownloadDatabase.addEventListener("click", downloadProductsJSFile);
+}
+
+/**
+ * File Reader converting image to Base64 data URI
+ */
+function handleProductImage(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    currentImageBase64 = e.target.result;
+    imagePreview.src = currentImageBase64;
+    imagePreview.style.display = "block";
+    imagePlaceholder.style.display = "none";
+  };
+  reader.readAsDataURL(file);
+}
+
+/**
+ * Specs Dynamic Row Creator
+ */
+function addSpecRow(key = "", val = "") {
+  const row = document.createElement("div");
+  row.className = "spec-row";
+  row.style.display = "flex";
+  row.style.gap = "0.5rem";
+  row.style.marginBottom = "0.5rem";
+
+  row.innerHTML = `
+    <input type="text" class="spec-key" placeholder="Key (e.g. Case Size)" value="${key}" style="flex: 1;">
+    <input type="text" class="spec-value" placeholder="Value (e.g. 42mm)" value="${val}" style="flex: 1;">
+    <button type="button" class="spec-del-btn" style="padding: 0.7rem; background: rgba(255, 0, 0, 0.15); color: #ff5c5c; border: 1px solid rgba(255,0,0,0.3); border-radius: 8px; cursor: pointer; transition: all 0.2s;">×</button>
+  `;
+
+  row.querySelector(".spec-del-btn").addEventListener("click", () => {
+    row.remove();
+  });
+
+  specsListContainer.appendChild(row);
+}
+
+/**
+ * Clear Specs Panel
+ */
+function clearSpecRows() {
+  specsListContainer.innerHTML = "";
+}
+
+/**
+ * Uploader Form Submission Handler
+ */
+function handleFormSubmit(e) {
+  e.preventDefault();
+
+  const name = productNameInput.value.trim();
+  const category = productCategorySelect.value;
+  const price = productPriceInput.value.trim();
+  const numericPrice = parseFloat(productNumericPriceInput.value) || 0;
+  const description = productDescriptionInput.value.trim();
+
+  // Build specifications object
+  const specs = {};
+  document.querySelectorAll(".spec-row").forEach(row => {
+    const key = row.querySelector(".spec-key").value.trim();
+    const val = row.querySelector(".spec-value").value.trim();
+    if (key && val) {
+      specs[key] = val;
+    }
+  });
+
+  // Image validation
+  const imageSource = currentImageBase64 || DEFAULT_PLACEHOLDER_IMG;
+
+  const newProduct = {
+    id: "custom_" + Date.now(),
+    name,
+    category,
+    price,
+    numericPrice,
+    description,
+    media: [
+      { type: "image", url: imageSource }
+    ],
+    specs
+  };
+
+  customProducts.push(newProduct);
+  saveCustomProducts();
+
+  // Reset form inputs & file visualizer
+  productForm.reset();
+  clearSpecRows();
+  addSpecRow("", ""); // Reset default empty spec row
+  rawMessageInput.value = "";
+  currentImageBase64 = "";
+  imagePreview.style.display = "none";
+  imagePlaceholder.style.display = "flex";
+
+  alert("Product uploaded successfully to catalog website!");
+}
+
+/**
+ * WhatsApp message Auto-Parser Bot
+ */
+function runMessageParserBot() {
+  const text = rawMessageInput.value.trim();
+  if (!text) {
+    alert("Please paste a text message first!");
+    return;
+  }
+
+  console.log("Parsing message:", text);
+
+  // 1. Detect Category
+  let category = "watches"; // Default
+  const watchKeywords = ["watch", "dial", "chrono", "automatic", "caliber", "bezel", "strap", "horology", "wrist"];
+  const clothingKeywords = ["shirt", "hoodie", "pants", "coat", "jacket", "linen", "terry", "apparel", "clothing", "fabric", "cotton", "suit", "blazer", "wear"];
+
+  let watchMatches = 0;
+  let clothingMatches = 0;
+
+  watchKeywords.forEach(kw => {
+    const regex = new RegExp("\\b" + kw + "s?\\b", "i");
+    if (regex.test(text)) watchMatches++;
+  });
+
+  clothingKeywords.forEach(kw => {
+    const regex = new RegExp("\\b" + kw + "s?\\b", "i");
+    if (regex.test(text)) clothingMatches++;
+  });
+
+  if (clothingMatches > watchMatches) {
+    category = "clothing";
+  }
+  productCategorySelect.value = category;
+
+  // 2. Parse Price
+  let displayPrice = "";
+  let numericPrice = 0;
+
+  // Search for currency format like $1,250 or Rs. 1500 or 1500 USD
+  const currencyRegex = /(?:\$|Rs\.?|₹|EUR)\s?(\d+(?:,\d{3})*(?:\.\d{2})?)/i;
+  const matchCurrency = text.match(currencyRegex);
+
+  if (matchCurrency) {
+    const valString = matchCurrency[1].replace(/,/g, "");
+    numericPrice = parseFloat(valString) || 0;
+    
+    // Set appropriate prefix
+    if (text.includes("$")) {
+      displayPrice = "$" + matchCurrency[1];
+    } else if (text.includes("Rs") || text.includes("Rs.")) {
+      displayPrice = "Rs. " + matchCurrency[1];
+    } else if (text.includes("₹")) {
+      displayPrice = "₹" + matchCurrency[1];
+    } else {
+      displayPrice = "$" + matchCurrency[1];
+    }
+  } else {
+    // Lookup plain numbers above 10
+    const numberRegex = /\b(\d{2,6})\b/;
+    const matchNumber = text.match(numberRegex);
+    if (matchNumber) {
+      numericPrice = parseFloat(matchNumber[1]) || 0;
+      displayPrice = "$" + numericPrice.toLocaleString();
+    }
+  }
+
+  if (displayPrice) {
+    productPriceInput.value = displayPrice;
+    productNumericPriceInput.value = numericPrice;
+  }
+
+  // 3. Parse Name (First sentence or line up to a sensible character count)
+  let name = "";
+  const lines = text.split(/\n/);
+  const firstLine = lines[0].trim();
+  
+  if (firstLine.length > 5 && firstLine.length < 40) {
+    name = firstLine;
+  } else {
+    // Try split by period
+    const sentences = text.split(/\.\s/);
+    const firstSentence = sentences[0].trim();
+    if (firstSentence.length > 5 && firstSentence.length < 50) {
+      name = firstSentence;
+    }
+  }
+
+  // Clean name of price terms
+  if (name) {
+    name = name.replace(/(?:price|prize|is|\$|Rs\.?|₹)\s?\d+(?:,\d{3})*(?:\.\d{2})?/gi, "").trim();
+    // Strip ending punctuation
+    name = name.replace(/[.,;:!]$/, "").trim();
+    productNameInput.value = name;
+  }
+
+  // 4. Parse Technical Specifications
+  clearSpecRows();
+  let specsFound = false;
+
+  // Scan lines for ":" or "-" patterns (e.g. Size: Medium or Material - 100% Wool)
+  lines.forEach(line => {
+    const splitRegex = /[:\-–—]\s?/;
+    if (splitRegex.test(line)) {
+      const parts = line.split(splitRegex);
+      if (parts.length >= 2) {
+        const key = parts[0].trim();
+        const val = parts[1].trim();
+        
+        // Exclude lines parsing to general descriptions or prices
+        if (key.length < 25 && val.length < 50 && !/price|cost|buy|shop/i.test(key)) {
+          addSpecRow(key, val);
+          specsFound = true;
+        }
+      }
+    }
+  });
+
+  // Look for sizing keywords
+  if (!specsFound) {
+    const sizeMatch = text.match(/\b(?:size|fit)\s?[:\-]?\s?([SML]|XL|XXL|small|medium|large)\b/i);
+    if (sizeMatch) {
+      addSpecRow("Size / Fit", sizeMatch[1].toUpperCase());
+      specsFound = true;
+    }
+
+    const materialMatch = text.match(/\b(?:wool|linen|cotton|leather|silk|gold|steel|titanium)\b/i);
+    if (materialMatch) {
+      addSpecRow("Material", materialMatch[0].charAt(0).toUpperCase() + materialMatch[0].slice(1));
+      specsFound = true;
+    }
+  }
+
+  if (!specsFound) {
+    addSpecRow("", ""); // Add empty row fallback
+  }
+
+  // 5. Build Description
+  // Take sentences that aren't the title and don't contain price information
+  let descText = text;
+  if (name && descText.startsWith(name)) {
+    descText = descText.substring(name.length).trim();
+  }
+  
+  // Clean description tags
+  descText = descText.replace(/^[.,;:!\-\s]+/, "");
+  productDescriptionInput.value = descText;
+
+  // Alert success
+  const infoBubble = document.createElement("div");
+  infoBubble.style.cssText = "position: fixed; top: 1.5rem; right: 1.5rem; background: var(--accent-gold); color: var(--bg-primary); padding: 1rem 1.5rem; border-radius: 12px; font-weight: 700; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.5);";
+  infoBubble.textContent = "🤖 Parser Bot successfully extracted details!";
+  document.body.appendChild(infoBubble);
+  setTimeout(() => infoBubble.remove(), 2500);
+}
+
+/**
+ * Render Inventory Table of Custom added items
+ */
+function renderInventoryTable() {
+  inventoryTableBody.innerHTML = "";
+
+  if (customProducts.length === 0) {
+    inventoryTableBody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+          No custom products uploaded in this browser yet. Use the uploader form above.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  customProducts.forEach(prod => {
+    const mediaUrl = prod.media[0]?.url || DEFAULT_PLACEHOLDER_IMG;
+    const specCount = Object.keys(prod.specs || {}).length;
+    
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>
+        <img src="${mediaUrl}" alt="${prod.name}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border-light);">
+      </td>
+      <td style="font-weight: 600;">${prod.name}</td>
+      <td><span class="product-category-tag" style="position: static; font-size: 0.7rem; padding: 0.2rem 0.5rem;">${prod.category}</span></td>
+      <td style="color: var(--accent-gold); font-weight: 700;">${prod.price}</td>
+      <td style="font-size: 0.85rem; color: var(--text-secondary);">
+        ${prod.description.substring(0, 45)}... <br>
+        <span style="font-size: 0.75rem; color: var(--text-muted);">${specCount} specifications added</span>
+      </td>
+      <td style="text-align: right;">
+        <button class="delete-prod-btn" data-id="${prod.id}" style="padding: 0.4rem 0.8rem; background: rgba(255, 0, 0, 0.15); color: #ff5c5c; border: 1px solid rgba(255,0,0,0.2); border-radius: 6px; cursor: pointer; transition: all 0.2s;">Delete</button>
+      </td>
+    `;
+
+    tr.querySelector(".delete-prod-btn").addEventListener("click", () => {
+      if (confirm(`Remove "${prod.name}" from catalog?`)) {
+        customProducts = customProducts.filter(item => item.id !== prod.id);
+        saveCustomProducts();
+      }
+    });
+
+    inventoryTableBody.appendChild(tr);
+  });
+}
+
+/**
+ * Package database as downloadable products.js
+ */
+function downloadProductsJSFile() {
+  // Load initial hardcoded list from imported products
+  const originalProducts = products || [];
+  
+  // Exclude custom products from duplicate rendering if already merged in memory
+  // Filter original list for items that don't start with "custom_"
+  const originalCleanList = originalProducts.filter(p => !p.id.startsWith("custom_"));
+  
+  // Combine lists
+  const combined = [...originalCleanList, ...customProducts];
+
+  const fileHeader = `/**\n * Urban Drip - Product Inventory Database\n * Auto-generated on ${new Date().toISOString()}\n */\n\n`;
+  const codeContent = fileHeader + `const products = ${JSON.stringify(combined, null, 2)};\n\n` +
+`// Export standard for both browser global and module environments\n` +
+`if (typeof module !== 'undefined' && module.exports) {\n` +
+`  module.exports = products;\n` +
+`} else {\n` +
+`  window.products = products;\n}\n`;
+
+  // Create virtual link download trigger
+  const blob = new Blob([codeContent], { type: "application/javascript" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "products.js";
+  document.body.appendChild(a);
+  a.click();
+  
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Run setup
+document.addEventListener("DOMContentLoaded", init);
