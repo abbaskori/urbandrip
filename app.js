@@ -1,37 +1,17 @@
-import products from './products.js';
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+import { SUPABASE_URL, SUPABASE_ANON_KEY, CONFIG } from "./config.js";
 
-/**
- * Urban Drip - Showroom Logic
- * 
- * To customize the WhatsApp number or pre-filled message, edit the config below.
- */
-
-const CONFIG = {
-  // Replace this with your personal/business WhatsApp phone number (with country code, no + or spaces)
-  // Example: "919876543210" for India, "15551234567" for US
-  whatsappPhone: "1234567890", 
-  
-  // Custom store branding name
-  brandName: "Urban Drip",
-  
-  // Custom message prefix for general inquiries
-  generalInquiryMsg: "Hello Urban Drip, I am visiting your website and have a general inquiry.",
-  
-  // Template function for product-specific inquiries
-  buildProductMessage: (product) => {
-    return `Hello Urban Drip, I'm interested in purchasing this product:\n\n` +
-           `*Product:* ${product.name}\n` +
-           `*Category:* ${product.category.toUpperCase()}\n` +
-           `*Price:* ${product.price}\n\n` +
-           `Could you please let me know if it's currently in stock? Thank you!`;
-  }
-};
+// Initialize Supabase client
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // State Variables
 let activeCategory = "all";
 let searchFilterQuery = "";
 let currentProduct = null;
 let currentMediaIndex = 0;
+
+
+
 
 // DOM Elements
 const productGrid = document.getElementById("product-grid");
@@ -53,8 +33,8 @@ const sliderPrev = document.getElementById("slider-prev");
 const sliderNext = document.getElementById("slider-next");
 
 // General WhatsApp elements
-const navWhatsappLink = document.getElementById("nav-whatsapp-link");
-const floatingWhatsappWidget = document.getElementById("floating-whatsapp-widget");
+const navWhatsappLinks = document.querySelectorAll('.whatsapp-contact-link');
+const floatingWhatsappWidgets = document.querySelectorAll('.floating-whatsapp-widget');
 
 /**
  * Initialize Application
@@ -68,7 +48,14 @@ function init() {
 /**
  * Load and merge products from products.js (window.products) and custom items (localStorage)
  */
-function getMergedProducts() {
+async function getMergedProducts() {
+  // Fetch products from Supabase
+  const { data, error } = await supabase.from('products').select('*');
+  if (error) {
+    console.error('Supabase fetch error:', error);
+    return [];
+  }
+  // Include any custom products stored in localStorage (optional)
   let customProducts = [];
   const stored = localStorage.getItem("ud_custom_products");
   if (stored) {
@@ -78,15 +65,8 @@ function getMergedProducts() {
       console.error("Failed to parse custom products", e);
     }
   }
-
-  // Get original items from imported products
-  const originalProducts = products || [];
-  
-  // Filter out any custom items that might be hardcoded to prevent duplicates
-  const originalCleanList = originalProducts.filter(p => !p.id.startsWith("custom_"));
-  
-  // Combine the hardcoded catalog with user custom uploads
-  return [...originalCleanList, ...customProducts];
+  // Merge Supabase data with local custom products
+  return [...data, ...customProducts];
 }
 
 /**
@@ -94,22 +74,28 @@ function getMergedProducts() {
  */
 function setupGeneralWhatsAppLinks() {
   const encodedGeneralMsg = encodeURIComponent(CONFIG.generalInquiryMsg);
-  const generalUrl = `https://wa.me/${CONFIG.whatsappPhone}?text=${encodedGeneralMsg}`;
-  
-  if (navWhatsappLink) navWhatsappLink.href = generalUrl;
-  if (floatingWhatsappWidget) floatingWhatsappWidget.href = generalUrl;
+  const primaryUrl = `https://wa.me/${CONFIG.whatsappPhone}?text=${encodedGeneralMsg}`;
+  const secondaryUrl = CONFIG.whatsappPhone2 ? `https://wa.me/${CONFIG.whatsappPhone2}?text=${encodedGeneralMsg}` : primaryUrl;
+  // Assign URLs to navigation links (first link primary, second link secondary if exists)
+  navWhatsappLinks.forEach((link, idx) => {
+    link.href = idx === 1 && CONFIG.whatsappPhone2 ? secondaryUrl : primaryUrl;
+  });
+  // Assign URLs to floating widgets similarly
+  floatingWhatsappWidgets.forEach((widget, idx) => {
+    widget.href = idx === 1 && CONFIG.whatsappPhone2 ? secondaryUrl : primaryUrl;
+  });
 }
 
 /**
  * Render Product Grid based on active category, search filter, and merged localStorage inventory
  */
-function renderProducts() {
-  const allProducts = getMergedProducts();
+async function renderProducts() {
+  const allProducts = await getMergedProducts();
 
   // Apply filters
   const filteredProducts = allProducts.filter(product => {
     const matchesCategory = activeCategory === "all" || product.category === activeCategory;
-    const matchesSearch = product.name.toLowerCase().includes(searchFilterQuery) || 
+    const matchesSearch = product.name.toLowerCase().includes(searchFilterQuery) ||
                           product.description.toLowerCase().includes(searchFilterQuery);
     return matchesCategory && matchesSearch;
   });
@@ -121,8 +107,8 @@ function renderProducts() {
     productGrid.innerHTML = `
       <div class="empty-state">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="8" y1="12" x2="16" y2="12"></line>
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="8" y1="12" x2="16" y2="12"/>
         </svg>
         <h3>No matching items found</h3>
         <p>Try refining your search or choosing a different category.</p>
@@ -133,18 +119,12 @@ function renderProducts() {
 
   // Generate cards
   filteredProducts.forEach(product => {
-    const firstMedia = product.media[0] || { type: "image", url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80" };
-    
-    // Check if product contains any video in its media list to add a badge
-    const hasVideo = product.media.some(m => m.type === "video");
-    const videoBadgeHTML = hasVideo 
-      ? `<span class="product-category-tag" style="left: auto; right: 1rem; background: rgba(37, 211, 102, 0.95); color: #fff; font-size: 0.7rem;">▶ Video</span>` 
-      : "";
-
+    const firstMedia = product.media?.[0] || { type: "image", url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80" };
+    const hasVideo = product.media?.some(m => m.type === "video");
+    const videoBadgeHTML = hasVideo ? `<span class="product-category-tag" style="left: auto; right: 1rem; background: rgba(37, 211, 102, 0.95); color: #fff; font-size: 0.7rem;">▶ Video</span>` : "";
     const card = document.createElement("div");
     card.className = "product-card";
     card.setAttribute("data-id", product.id);
-    
     card.innerHTML = `
       <div class="product-media-wrapper">
         <img src="${firstMedia.url}" alt="${product.name}" loading="lazy">
@@ -159,14 +139,13 @@ function renderProducts() {
           <div class="view-details-indicator">
             <span>Details</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-              <polyline points="12 5 19 12 12 19"></polyline>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
             </svg>
           </div>
         </div>
       </div>
     `;
-
     card.addEventListener("click", () => openProductModal(product));
     productGrid.appendChild(card);
   });
