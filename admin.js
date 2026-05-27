@@ -217,7 +217,7 @@ function handleFormSubmit(e) {
 }
 
 /**
- * WhatsApp message Auto-Parser Bot
+ * WhatsApp message Auto-Parser Bot (Enhanced Power Version)
  */
 function runMessageParserBot() {
   const text = rawMessageInput.value.trim();
@@ -230,8 +230,8 @@ function runMessageParserBot() {
 
   // 1. Detect Category
   let category = "watches"; // Default
-  const watchKeywords = ["watch", "dial", "chrono", "automatic", "caliber", "bezel", "strap", "horology", "wrist"];
-  const clothingKeywords = ["shirt", "hoodie", "pants", "coat", "jacket", "linen", "terry", "apparel", "clothing", "fabric", "cotton", "suit", "blazer", "wear"];
+  const watchKeywords = ["watch", "dial", "chrono", "automatic", "caliber", "bezel", "strap", "horology", "wrist", "rolex", "patek", "omega", "seiko", "casio", "timepiece", "quartz", "smartwatch"];
+  const clothingKeywords = ["shirt", "hoodie", "pants", "coat", "jacket", "linen", "terry", "apparel", "clothing", "fabric", "cotton", "suit", "blazer", "wear", "t-shirt", "jeans", "denim", "sweater", "sneakers", "shoes", "boots", "cap", "hat", "accessory"];
 
   let watchMatches = 0;
   let clothingMatches = 0;
@@ -255,8 +255,8 @@ function runMessageParserBot() {
   let displayPrice = "";
   let numericPrice = 0;
 
-  // Search for currency format like $1,250 or Rs. 1500 or 1500 USD
-  const currencyRegex = /(?:\$|Rs\.?|₹|EUR)\s?(\d+(?:,\d{3})*(?:\.\d{2})?)/i;
+  // Search for currency format like $1,250 or Rs. 1500 or 1500 USD or 1500 INR
+  const currencyRegex = /(?:price|prize|rate|cost|mrp)?\s*[:\-]?\s*(?:\$|Rs\.?|₹|EUR|INR|USD)?\s?(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:INR|USD)?/i;
   const matchCurrency = text.match(currencyRegex);
 
   if (matchCurrency) {
@@ -264,22 +264,20 @@ function runMessageParserBot() {
     numericPrice = parseFloat(valString) || 0;
     
     // Set appropriate prefix
-    if (text.includes("$")) {
-      displayPrice = "$" + matchCurrency[1];
-    } else if (text.includes("Rs") || text.includes("Rs.")) {
-      displayPrice = "Rs. " + matchCurrency[1];
-    } else if (text.includes("₹")) {
-      displayPrice = "₹" + matchCurrency[1];
+    if (text.includes("$") || text.includes("USD")) {
+      displayPrice = "$" + numericPrice.toLocaleString();
+    } else if (text.match(/Rs\.?|₹|INR/i)) {
+      displayPrice = "₹" + numericPrice.toLocaleString();
     } else {
-      displayPrice = "$" + matchCurrency[1];
+      displayPrice = "$" + numericPrice.toLocaleString();
     }
   } else {
-    // Lookup plain numbers above 10
+    // Lookup plain numbers above 10 (fallback)
     const numberRegex = /\b(\d{2,6})\b/;
     const matchNumber = text.match(numberRegex);
     if (matchNumber) {
       numericPrice = parseFloat(matchNumber[1]) || 0;
-      displayPrice = "$" + numericPrice.toLocaleString();
+      displayPrice = "₹" + numericPrice.toLocaleString(); // default to ₹ based on user's phone numbers
     }
   }
 
@@ -288,61 +286,75 @@ function runMessageParserBot() {
     productNumericPriceInput.value = numericPrice;
   }
 
-  // 3. Parse Name (First sentence or line up to a sensible character count)
-  let name = "";
-  const lines = text.split(/\n/);
-  const firstLine = lines[0].trim();
-  
-  if (firstLine.length > 5 && firstLine.length < 40) {
-    name = firstLine;
-  } else {
-    // Try split by period
-    const sentences = text.split(/\.\s/);
-    const firstSentence = sentences[0].trim();
-    if (firstSentence.length > 5 && firstSentence.length < 50) {
-      name = firstSentence;
-    }
-  }
+  // Split into lines and remove empty ones or "forwarded" headers
+  const lines = text.split(/\n/).map(l => l.trim()).filter(l => l.length > 0 && !/forwarded message/i.test(l));
 
-  // Clean name of price terms
-  if (name) {
-    name = name.replace(/(?:price|prize|is|\$|Rs\.?|₹)\s?\d+(?:,\d{3})*(?:\.\d{2})?/gi, "").trim();
-    // Strip ending punctuation
-    name = name.replace(/[.,;:!]$/, "").trim();
-    productNameInput.value = name;
+  // 3. Parse Name (usually the first non-empty line)
+  let name = "";
+  let descriptionLines = [...lines];
+
+  if (lines.length > 0) {
+    name = lines[0];
+    
+    // Clean name of price terms or specs
+    name = name.replace(/(?:price|prize|rate|cost|is|\$|Rs\.?|₹|INR)\s?\d+(?:,\d{3})*(?:\.\d{2})?/gi, "").trim();
+    // Strip ending punctuation, asterisks or hyphens
+    name = name.replace(/^[.,;\-:\*!]+|[.,;\-:\*!]+$/g, "").trim();
+    
+    if (name.length > 2 && name.length < 80) {
+      productNameInput.value = name;
+      descriptionLines.shift(); // remove title from description
+    } else {
+       // Fallback to first sentence if it was a giant paragraph
+       const sentences = name.split(/\.\s/);
+       if (sentences[0].length < 80) {
+          name = sentences[0];
+          productNameInput.value = name.replace(/^[.,;\-:\*!]+|[.,;\-:\*!]+$/g, "").trim();
+       }
+    }
   }
 
   // 4. Parse Technical Specifications
   clearSpecRows();
   let specsFound = false;
 
-  // Scan lines for ":" or "-" patterns (e.g. Size: Medium or Material - 100% Wool)
-  lines.forEach(line => {
-    const splitRegex = /[:\-–—]\s?/;
-    if (splitRegex.test(line)) {
-      const parts = line.split(splitRegex);
-      if (parts.length >= 2) {
-        const key = parts[0].trim();
-        const val = parts[1].trim();
-        
-        // Exclude lines parsing to general descriptions or prices
-        if (key.length < 25 && val.length < 50 && !/price|cost|buy|shop/i.test(key)) {
-          addSpecRow(key, val);
-          specsFound = true;
-        }
+  // Scan lines for ":" or "-" or "*" patterns (e.g. Size: Medium or Material - 100% Wool or *Color:* Black)
+  const remainingDescLines = [];
+
+  descriptionLines.forEach(line => {
+    // Matches "Key : Value", "*Key*: Value", "Key - Value"
+    const specRegex = /^\*?([A-Za-z\s]+)\*?\s*[:\-–—]\s*(.+)$/;
+    const match = line.match(specRegex);
+    
+    if (match) {
+      const key = match[1].trim();
+      const val = match[2].trim();
+      
+      // Exclude lines that are too long to be specs, or relate to price
+      if (key.length < 30 && val.length < 80 && !/price|cost|buy|shop|rate/i.test(key)) {
+        addSpecRow(key.replace(/^\*|\*$/g, ''), val.replace(/^\*|\*$/g, ''));
+        specsFound = true;
+        return; // Don't add to description
       }
     }
+    
+    // Check if line is just price info, and exclude from description
+    if (/(?:price|prize|rate|cost|mrp)?\s*[:\-]?\s*(?:\$|Rs\.?|₹|EUR|INR|USD)?\s?(\d+(?:,\d{3})*(?:\.\d{2})?)/i.test(line)) {
+      if (line.length < 40) return; // likely just a price line
+    }
+
+    remainingDescLines.push(line);
   });
 
-  // Look for sizing keywords
+  // Look for implicit sizing keywords if no explicit specs found
   if (!specsFound) {
     const sizeMatch = text.match(/\b(?:size|fit)\s?[:\-]?\s?([SML]|XL|XXL|small|medium|large)\b/i);
     if (sizeMatch) {
-      addSpecRow("Size / Fit", sizeMatch[1].toUpperCase());
+      addSpecRow("Size", sizeMatch[1].toUpperCase());
       specsFound = true;
     }
 
-    const materialMatch = text.match(/\b(?:wool|linen|cotton|leather|silk|gold|steel|titanium)\b/i);
+    const materialMatch = text.match(/\b(?:wool|linen|cotton|leather|silk|gold|steel|titanium|canvas|suede)\b/i);
     if (materialMatch) {
       addSpecRow("Material", materialMatch[0].charAt(0).toUpperCase() + materialMatch[0].slice(1));
       specsFound = true;
@@ -354,20 +366,14 @@ function runMessageParserBot() {
   }
 
   // 5. Build Description
-  // Take sentences that aren't the title and don't contain price information
-  let descText = text;
-  if (name && descText.startsWith(name)) {
-    descText = descText.substring(name.length).trim();
-  }
-  
-  // Clean description tags
-  descText = descText.replace(/^[.,;:!\-\s]+/, "");
+  let descText = remainingDescLines.join('\n');
+  descText = descText.replace(/^\s+|\s+$/g, "");
   productDescriptionInput.value = descText;
 
   // Alert success
   const infoBubble = document.createElement("div");
   infoBubble.style.cssText = "position: fixed; top: 1.5rem; right: 1.5rem; background: var(--accent-gold); color: var(--bg-primary); padding: 1rem 1.5rem; border-radius: 12px; font-weight: 700; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.5);";
-  infoBubble.textContent = "🤖 Parser Bot successfully extracted details!";
+  infoBubble.textContent = "🚀 Super Parser Bot extracted details successfully!";
   document.body.appendChild(infoBubble);
   setTimeout(() => infoBubble.remove(), 2500);
 }
