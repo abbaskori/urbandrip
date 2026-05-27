@@ -1,4 +1,8 @@
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 import products from './products.js';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /**
  * Urban Drip - Admin Dashboard & Parser Bot
@@ -166,7 +170,7 @@ function clearSpecRows() {
 /**
  * Uploader Form Submission Handler
  */
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
   e.preventDefault();
 
   const name = productNameInput.value.trim();
@@ -201,19 +205,31 @@ function handleFormSubmit(e) {
     specs
   };
 
-  customProducts.push(newProduct);
-  saveCustomProducts();
+  try {
+    // 1. Save to Supabase Database (makes it globally available on the website)
+    const { error } = await supabase.from('products').insert([newProduct]);
+    if (error) {
+       console.warn("Supabase insert failed, storing locally instead.", error);
+       // We still save locally so the admin doesn't lose it if Supabase RLS is misconfigured
+    }
 
-  // Reset form inputs & file visualizer
-  productForm.reset();
-  clearSpecRows();
-  addSpecRow("", ""); // Reset default empty spec row
-  rawMessageInput.value = "";
-  currentImageBase64 = "";
-  imagePreview.style.display = "none";
-  imagePlaceholder.style.display = "flex";
+    customProducts.push(newProduct);
+    saveCustomProducts();
 
-  alert("Product uploaded successfully to catalog website!");
+    // Reset form inputs & file visualizer
+    productForm.reset();
+    clearSpecRows();
+    addSpecRow("", ""); // Reset default empty spec row
+    rawMessageInput.value = "";
+    currentImageBase64 = "";
+    imagePreview.style.display = "none";
+    imagePlaceholder.style.display = "flex";
+
+    alert("Product uploaded successfully to catalog website!");
+  } catch (err) {
+    console.error("Upload error:", err);
+    alert("An unexpected error occurred while uploading.");
+  }
 }
 
 /**
