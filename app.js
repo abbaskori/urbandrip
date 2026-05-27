@@ -1,5 +1,6 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, CONFIG } from "./config.js";
+import staticProducts from "./products.js";
 
 // Initialize Supabase client
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -9,9 +10,6 @@ let activeCategory = "all";
 let searchFilterQuery = "";
 let currentProduct = null;
 let currentMediaIndex = 0;
-
-
-
 
 // DOM Elements
 const productGrid = document.getElementById("product-grid");
@@ -49,12 +47,20 @@ function init() {
  * Load and merge products from products.js (window.products) and custom items (localStorage)
  */
 async function getMergedProducts() {
-  // Fetch products from Supabase
-  const { data, error } = await supabase.from('products').select('*');
-  if (error) {
-    console.error('Supabase fetch error:', error);
-    return [];
+  let supabaseProducts = [];
+
+  // Try fetching products from Supabase Database
+  try {
+    const { data, error } = await supabase.from('products').select('*');
+    if (error) {
+      console.warn('Supabase fetch error (Table might not exist yet):', error.message);
+    } else if (data) {
+      supabaseProducts = data;
+    }
+  } catch (err) {
+    console.error("Failed to connect to Supabase:", err);
   }
+
   // Include any custom products stored in localStorage (optional)
   let customProducts = [];
   const stored = localStorage.getItem("ud_custom_products");
@@ -65,8 +71,9 @@ async function getMergedProducts() {
       console.error("Failed to parse custom products", e);
     }
   }
-  // Merge Supabase data with local custom products
-  return [...data, ...customProducts];
+
+  // Merge Static Data + Supabase Data + Local Uploaded Data
+  return [...staticProducts, ...supabaseProducts, ...customProducts];
 }
 
 /**
