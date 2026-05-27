@@ -3,9 +3,9 @@ export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const CONFIG = {
   // Primary WhatsApp number (no +, include country code)
-  whatsappPhone: "1234567890",
+  whatsappPhone: "919601413428",
   // Secondary WhatsApp number (optional)
-  whatsappPhone2: "0987654321",
+  whatsappPhone2: "916355421593",
   brandName: "Urban Drip",
   generalInquiryMsg: "Hello Urban Drip, I have a general inquiry.",
   buildProductMessage: (product) => {
