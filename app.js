@@ -219,10 +219,16 @@ function openProductModal(product) {
     });
   }
 
-  // Construct WhatsApp Link
+  // Construct WhatsApp Links for both numbers
+  const linksContainer = document.getElementById('modal-whatsapp-links');
   const message = CONFIG.buildProductMessage(product);
   const encodedMsg = encodeURIComponent(message);
-  modalWhatsappBtn.href = `https://wa.me/${CONFIG.whatsappPhone}?text=${encodedMsg}`;
+  linksContainer.innerHTML = `
+    <a href="https://wa.me/${CONFIG.whatsappPhone}?text=${encodedMsg}" target="_blank" rel="noopener noreferrer" class="inquiry-btn">WhatsApp ${CONFIG.whatsappPhone}</a>
+    <a href="https://wa.me/${CONFIG.whatsappPhone2}?text=${encodedMsg}" target="_blank" rel="noopener noreferrer" class="inquiry-btn">WhatsApp ${CONFIG.whatsappPhone2}</a>
+  `;
+  // Hide old single button if still present
+  if (modalWhatsappBtn) modalWhatsappBtn.style.display = 'none';
 
   // Render media slides
   renderModalMedia();

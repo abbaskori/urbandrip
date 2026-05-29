@@ -1,161 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Urban Drip | Admin Uploader Bot</title>
-  <link rel="stylesheet" href="index.css">
-</head>
-<body class="admin-page">
-
-  <!-- Header -->
-  <header>
-    <div class="nav-container">
-      <div style="display: flex; align-items: center; gap: 1rem;">
-        <img src="assets/logo.jpg" alt="Urban Drip Logo" style="height: 48px; width: 48px; border-radius: 50%; object-fit: cover; border: 1px solid var(--accent-gold);">
-        <a href="index.html" class="brand" style="font-size: 1.5rem;">Urban Drip <span style="font-size: 0.8rem; letter-spacing: 0.05em; color: var(--accent-gold); font-weight: 500;">Admin</span></a>
-      </div>
-      <a href="index.html" class="whatsapp-contact-link" style="border-color: var(--text-primary); color: var(--text-primary);">
-        <span>← View Showroom</span>
-      </a>
-    </div>
-  </header>
-
-  <!-- Hero / Intro -->
-  <section class="hero" style="min-height: auto; padding: 3rem 2rem 2rem;">
-    <h1>Product <span>Uploader Bot</span></h1>
-    <p>Paste a raw message from WhatsApp or draft it here. Our parser bot will automatically extract product details and format them for the website.</p>
-  </section>
-
-  <!-- Main Grid Content -->
-  <main class="showroom-container" style="margin-top: 1rem;">
-    <div class="admin-grid">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin | Urban Drift</title>
+  </head>
+  <body>
+    <header>
+      <a href="/" class="logo">Urban<span>Drift</span></a>
+      <nav>
+        <a href="/">Showroom</a>
+        <a href="/admin.html">Admin</a>
+      </nav>
+    </header>
+    
+    <main>
+      <h1 class="page-title">Admin Portal</h1>
+      <p class="page-subtitle">Manage showroom inventory and products.</p>
       
-      <!-- Left Box: The Message Input & Photo -->
-      <div class="admin-panel-card">
-        <h2 class="panel-title">1. Raw Message & Media</h2>
-        
-        <div class="form-group">
-          <label for="raw-message">Paste WhatsApp Message Details Here</label>
-          <textarea id="raw-message" rows="8" placeholder="Example:
-Classic Automatic Silver. Gold dial with brown leather strap. Water resistant 100m. Case is 42mm. Size fits all. Price is $1250. This is a very luxurious timepiece."></textarea>
-          <button type="button" class="admin-btn secondary" id="btn-parse-message" style="margin-top: 1rem; width: 100%;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
-              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-            </svg>
-            <span>Run Auto-Parser Bot</span>
-          </button>
-        </div>
-
-        <div class="form-group" style="margin-top: 2rem;">
-          <label>Product Image</label>
-          <div class="image-drag-area" id="image-drag-area">
-            <input type="file" id="product-image-file" accept="image/*" style="display: none;">
-            <div id="image-placeholder">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40" style="color: var(--text-muted); margin-bottom: 0.5rem;">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                <polyline points="21 15 16 10 5 21"></polyline>
-              </svg>
-              <p>Click to Upload or Drag Product Photo</p>
-            </div>
-            <img id="image-preview" src="" alt="Product Preview" style="display: none; width: 100%; height: 100%; object-fit: cover;">
-          </div>
-        </div>
-      </div>
-
-      <!-- Right Box: Editable Details Form -->
-      <div class="admin-panel-card">
-        <h2 class="panel-title">2. Verify & Upload Product</h2>
-        
+      <div class="admin-container glass-card">
         <form id="product-form">
-          <div class="form-row">
-            <div class="form-group" style="flex: 2;">
-              <label for="product-name">Product Name</label>
-              <input type="text" id="product-name" required placeholder="e.g. Vintage Leather Watch">
-            </div>
-            <div class="form-group" style="flex: 1;">
-              <label for="product-category">Category</label>
-              <select id="product-category" required>
-                <option value="watches">Watches</option>
-                <option value="clothing">Clothing</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group" style="flex: 1;">
-              <label for="product-price">Display Price</label>
-              <input type="text" id="product-price" required placeholder="e.g. $1,250">
-            </div>
-            <div class="form-group" style="flex: 1;">
-              <label for="product-numeric-price">Numeric Price (For sorting)</label>
-              <input type="number" id="product-numeric-price" required placeholder="e.g. 1250">
-            </div>
-          </div>
-
           <div class="form-group">
-            <label for="product-description">Description</label>
-            <textarea id="product-description" rows="4" required placeholder="A brief narrative describing the item..."></textarea>
+            <label for="name">Product Name *</label>
+            <input type="text" id="name" class="form-control" required placeholder="e.g. Rolex Submariner">
           </div>
-
+          
           <div class="form-group">
-            <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-              <span>Technical Specifications</span>
-              <button type="button" class="spec-add-btn" id="btn-add-spec">+ Add Spec Row</button>
-            </label>
-            <div id="specs-list-container">
-              <!-- Spec Rows will be dynamically added here -->
+            <label for="category">Category</label>
+            <input type="text" id="category" class="form-control" placeholder="e.g. Watches">
+          </div>
+          
+          <div class="form-group">
+            <label for="price">Price (USD) *</label>
+            <input type="number" id="price" class="form-control" required min="0" step="0.01" placeholder="e.g. 15000">
+          </div>
+          
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" class="form-control" placeholder="Product details..."></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label>Product Images *</label>
+            <div class="file-upload-wrapper">
+              <input type="file" id="media-upload" accept="image/*" multiple required>
+              <div class="file-upload-text">
+                <p>Click or drag images to upload</p>
+                <small>Max file size: 5MB (Base64 encoding used)</small>
+              </div>
             </div>
+            <div id="preview-container" class="preview-container"></div>
           </div>
-
-          <div class="admin-action-row" style="margin-top: 2rem;">
-            <button type="submit" class="admin-btn primary" style="flex: 1.5;">
-              Upload to Website
-            </button>
-            <button type="button" class="admin-btn secondary" id="btn-download-database" style="flex: 1;" title="Export products.js to replace local database">
-              Export database.js
-            </button>
-          </div>
+          
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Add Product</button>
+          
+          <div id="status-message" class="status-message"></div>
         </form>
       </div>
+    </main>
 
-    </div>
-
-    <!-- Bottom Box: Manage Inventory -->
-    <div class="admin-panel-card" style="margin-top: 3rem; margin-bottom: 5rem;">
-      <h2 class="panel-title" style="display: flex; justify-content: space-between; align-items: center;">
-        <span>3. Custom Inventory Management</span>
-        <button type="button" class="spec-add-btn" id="btn-clear-all" style="background: hsla(0, 70%, 50%, 0.1); color: hsl(0, 80%, 65%); border-color: hsla(0, 70%, 50%, 0.3);">Clear Custom Items</button>
-      </h2>
-      <div class="admin-table-container">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th style="width: 80px;">Media</th>
-              <th>Product Name</th>
-              <th>Category</th>
-              <th>Price</th>
-              <th>Details</th>
-              <th style="text-align: right; width: 100px;">Action</th>
-            </tr>
-          </thead>
-          <tbody id="inventory-table-body">
-            <!-- Custom items injected here -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </main>
-
-  <!-- Footer -->
-  <footer>
-    <div class="footer-content">
-      <div class="footer-brand">Urban Drip</div>
-      <p class="footer-tagline">Drip Different. Administration dashboard console.</p>
-    </div>
-  </footer>
-
-  <script type="module" src="admin.js"></script>
-</body>
+    <script type="module" src="/src/admin.js"></script>
+  </body>
 </html>

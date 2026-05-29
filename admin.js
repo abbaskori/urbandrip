@@ -9,14 +9,14 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
  */
 
 // Globals
-let currentImageBase64 = "";
+let mediaBase64Array = [];
 let customProducts = [];
 
 // DOM Elements
 const rawMessageInput = document.getElementById("raw-message");
 const btnParseMessage = document.getElementById("btn-parse-message");
 
-const productImageFile = document.getElementById("product-image-file");
+const productMediaFiles = document.getElementById("product-media-files");
 const imageDragArea = document.getElementById("image-drag-area");
 const imagePlaceholder = document.getElementById("image-placeholder");
 const imagePreview = document.getElementById("image-preview");
@@ -83,7 +83,7 @@ function setupEventListeners() {
   btnAddSpec.addEventListener("click", () => addSpecRow("", ""));
 
   // Image Drag & Drop triggers
-  imageDragArea.addEventListener("click", () => productImageFile.click());
+  imageDragArea.addEventListener("click", () => productMediaFiles.click());
   imageDragArea.addEventListener("dragover", (e) => {
     e.preventDefault();
     imageDragArea.style.borderColor = "var(--accent-gold)";
@@ -97,14 +97,20 @@ function setupEventListeners() {
     e.preventDefault();
     imageDragArea.style.borderColor = "var(--border-light)";
     imageDragArea.style.background = "transparent";
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleProductImage(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length) {
+      // Reset media array for new selection
+      mediaBase64Array = [];
+      const files = Array.from(e.dataTransfer.files);
+      files.forEach(handleMediaFile);
     }
   });
 
-  productImageFile.addEventListener("change", (e) => {
-    if (e.target.files && e.target.files[0]) {
-      handleProductImage(e.target.files[0]);
+  productMediaFiles.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files.length) {
+      // Reset media array for new selection
+      mediaBase64Array = [];
+      const files = Array.from(e.target.files);
+      files.forEach(handleMediaFile);
     }
   });
 
@@ -126,13 +132,18 @@ function setupEventListeners() {
 /**
  * File Reader converting image to Base64 data URI
  */
-function handleProductImage(file) {
+function handleMediaFile(file) {
   const reader = new FileReader();
   reader.onload = (e) => {
-    currentImageBase64 = e.target.result;
-    imagePreview.src = currentImageBase64;
-    imagePreview.style.display = "block";
-    imagePlaceholder.style.display = "none";
+    const dataUrl = e.target.result;
+    const type = file.type.startsWith('video') ? 'video' : 'image';
+    mediaBase64Array.push({ type, dataUrl });
+    // Show preview of the first media only
+    if (mediaBase64Array.length === 1) {
+      imagePreview.src = dataUrl;
+      imagePreview.style.display = "block";
+      imagePlaceholder.style.display = "none";
+    }
   };
   reader.readAsDataURL(file);
 }
@@ -189,8 +200,8 @@ async function handleFormSubmit(e) {
     }
   });
 
-  // Image validation
-  const imageSource = currentImageBase64 || DEFAULT_PLACEHOLDER_IMG;
+  // Media validation & preparation
+  const mediaArray = mediaBase64Array.length > 0 ? mediaBase64Array.map(m => ({ type: m.type, url: m.dataUrl })) : [{ type: "image", url: DEFAULT_PLACEHOLDER_IMG }];
 
   const newProduct = {
     id: "custom_" + Date.now(),
@@ -199,9 +210,7 @@ async function handleFormSubmit(e) {
     price,
     numericPrice,
     description,
-    media: [
-      { type: "image", url: imageSource }
-    ],
+    media: mediaArray,
     specs
   };
 
@@ -216,14 +225,14 @@ async function handleFormSubmit(e) {
     customProducts.push(newProduct);
     saveCustomProducts();
 
-    // Reset form inputs & file visualizer
-    productForm.reset();
-    clearSpecRows();
-    addSpecRow("", ""); // Reset default empty spec row
-    rawMessageInput.value = "";
-    currentImageBase64 = "";
-    imagePreview.style.display = "none";
-    imagePlaceholder.style.display = "flex";
+    // Reset form inputs & media visualizer
+  productForm.reset();
+  clearSpecRows();
+  addSpecRow("", ""); // Reset default empty spec row
+  rawMessageInput.value = "";
+  mediaBase64Array = [];
+  imagePreview.style.display = "none";
+  imagePlaceholder.style.display = "flex";
 
     alert("Product uploaded successfully to catalog website!");
   } catch (err) {
