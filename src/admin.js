@@ -11,6 +11,52 @@ document.addEventListener('DOMContentLoaded', () => {
   
   let base64Images = [];
 
+  const waPaste = document.getElementById('wa-paste');
+  if (waPaste) {
+    waPaste.addEventListener('input', (e) => {
+      const text = e.target.value.trim();
+      if (!text) return;
+      
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+      if (lines.length === 0) return;
+      
+      // Name: Assume first line is the product name
+      const nameInput = document.getElementById('name');
+      if (lines[0] && !lines[0].match(/^(price|category|description)/i)) {
+        nameInput.value = lines[0];
+      }
+      
+      // Extract Price
+      const priceInput = document.getElementById('price');
+      const priceRegex = /(?:price|rs\.?|\$|₹)\s*[:\-]?\s*([\d,]+(?:\.\d+)?)/i;
+      const priceMatch = text.match(priceRegex);
+      if (priceMatch) {
+        priceInput.value = priceMatch[1].replace(/,/g, '');
+      }
+      
+      // Extract Category
+      const catInput = document.getElementById('category');
+      const catRegex = /(?:category|type)\s*[:\-]\s*(.+)/i;
+      const catMatch = text.match(catRegex);
+      if (catMatch) {
+        catInput.value = catMatch[1].trim();
+      } else if (!catInput.value) {
+        catInput.value = 'Watches'; // default
+      }
+      
+      // Extract Description
+      const descInput = document.getElementById('description');
+      const descRegex = /(?:description|desc|details)\s*[:\-]\s*([\s\S]+)/i;
+      const descMatch = text.match(descRegex);
+      if (descMatch) {
+        descInput.value = descMatch[1].trim();
+      } else {
+        // Use all lines except first as description if no explicit marker
+        descInput.value = lines.slice(1).join('\n');
+      }
+    });
+  }
+
   // Handle file selection and Base64 conversion
   fileInput.addEventListener('change', (e) => {
     const files = Array.from(e.target.files);
@@ -70,6 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Reset form
       form.reset();
+      if (waPaste) waPaste.value = '';
       base64Images = [];
       previewContainer.innerHTML = '';
       

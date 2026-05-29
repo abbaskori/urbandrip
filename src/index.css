@@ -42,18 +42,15 @@ header {
   z-index: 100;
 }
 
-.logo {
-  font-size: 2rem;
-  font-weight: 300;
-  letter-spacing: 4px;
-  color: var(--text-primary);
-  text-decoration: none;
-  text-transform: uppercase;
+.logo-img {
+  max-height: 60px;
+  width: auto;
+  object-fit: contain;
+  transition: transform 0.3s ease;
 }
 
-.logo span {
-  font-weight: 800;
-  color: var(--accent);
+.logo-img:hover {
+  transform: scale(1.05);
 }
 
 nav a {

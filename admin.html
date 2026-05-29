@@ -8,13 +8,22 @@
   </head>
   <body>
     <header style="justify-content: center;">
-      <a href="/" class="logo">Urban<span>Drift</span></a>
+      <a href="/" class="logo">
+        <img src="/logo.jpg" alt="Urban Drift Logo" class="logo-img" />
+      </a>
     </header>
     
     <main>
       <h1 class="page-title">Admin Portal</h1>
       <p class="page-subtitle">Manage showroom inventory and products.</p>
       
+      <div class="admin-container glass-card" style="margin-bottom: 2rem;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="wa-paste" style="color: var(--accent);">⚡ WhatsApp Auto-Fill (Paste message here)</label>
+          <textarea id="wa-paste" class="form-control" placeholder="Paste watch details from WhatsApp here... it will auto-fill the form below" style="min-height: 80px;"></textarea>
+        </div>
+      </div>
+
       <div class="admin-container glass-card">
         <form id="product-form">
           <div class="form-group">
