@@ -14,11 +14,23 @@
     </header>
     
     <main>
-      <h1 class="page-title">The Showroom</h1>
-      <p class="page-subtitle">Discover our exclusive collection of luxury items.</p>
+      <div class="hero">
+        <h1 class="page-title">The Showroom</h1>
+        <p class="page-subtitle">Discover our exclusive collection of luxury watches and clothing.</p>
+      </div>
+
+      <div class="controls-section">
+        <div class="filter-group" id="category-filters">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="Watches">Watches</button>
+          <button class="filter-btn" data-filter="Clothing">Clothing</button>
+        </div>
+      </div>
       
-      <div id="products-grid" class="showroom-grid">
-        <!-- Products will be injected here via JS -->
+      <div class="showroom-container">
+        <div id="products-grid" class="product-grid">
+          <!-- Products will be injected here via JS -->
+        </div>
       </div>
     </main>
 

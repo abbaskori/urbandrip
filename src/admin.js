@@ -39,8 +39,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const catRegex = /(?:category|type)\s*[:\-]\s*(.+)/i;
       const catMatch = text.match(catRegex);
       if (catMatch) {
-        catInput.value = catMatch[1].trim();
-      } else if (!catInput.value) {
+        const extracted = catMatch[1].trim().toLowerCase();
+        if (extracted.includes('cloth') || extracted.includes('apparel') || extracted.includes('shirt') || extracted.includes('jeans')) {
+          catInput.value = 'Clothing';
+        } else {
+          catInput.value = 'Watches';
+        }
+      } else {
         catInput.value = 'Watches'; // default
       }
       
