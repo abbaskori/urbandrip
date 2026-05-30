@@ -1,62 +1,98 @@
 import { supabase } from './config.js';
 import './index.css';
 
-const PHONE_1 = '919601413428'; // Abbas
-const PHONE_2 = '916355421593'; // Support
+const PHONE_1 = '919601413428';
+const PHONE_2 = '916355421593';
 
-// ─── Modal State ─────────────────────────────────────────────────────────────
-let currentImages = [];
-let currentIndex = 0;
+// ── Navbar scroll effect ────────────────────────────────────────────────────
+// Theme Manager for dark mode
+const themeToggle = document.getElementById('theme-toggle');
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+}
+function initTheme() {
+  const saved = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const theme = saved || (prefersDark ? 'dark' : 'light');
+  applyTheme(theme);
+}
+themeToggle?.addEventListener('click', () => {
+  const current = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(current);
+  localStorage.setItem('theme', current);
+});
+initTheme();
+const navbar = document.getElementById('navbar');
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  navbar?.classList.toggle('scrolled', window.scrollY > 40);
+}, { passive: true });
 
+// ── Modal elements ──────────────────────────────────────────────────────────
 const modal       = document.getElementById('product-modal');
 const mediaViewer = document.getElementById('modal-media-viewer');
-const indicators  = document.getElementById('slider-indicators');
+const dotsWrap    = document.getElementById('slider-indicators');
 const prevBtn     = document.getElementById('slider-prev');
 const nextBtn     = document.getElementById('slider-next');
 const closeBtn    = document.getElementById('close-modal');
 
-function showSlide(index) {
-  currentIndex = (index + currentImages.length) % currentImages.length;
-  mediaViewer.innerHTML = `<img src="${currentImages[currentIndex]}" alt="Product image" style="width:100%;height:100%;object-fit:cover;">`;
-  
-  // Update dot indicators
-  indicators.querySelectorAll('.indicator-dot').forEach((dot, i) => {
-    dot.classList.toggle('active', i === currentIndex);
-  });
+let currentImages = [];
+let currentIndex  = 0;
 
-  // Hide nav buttons if only 1 image
-  const showNav = currentImages.length > 1;
-  prevBtn.style.display = showNav ? 'flex' : 'none';
-  nextBtn.style.display = showNav ? 'flex' : 'none';
+function goSlide(index) {
+  currentIndex = (index + currentImages.length) % currentImages.length;
+
+  // Smooth swap
+  const img = mediaViewer.querySelector('img');
+  if (img) {
+    img.style.opacity = '0';
+    setTimeout(() => {
+      img.src = currentImages[currentIndex];
+      img.style.opacity = '1';
+    }, 150);
+  }
+
+  dotsWrap.querySelectorAll('.slide-dot').forEach((d, i) =>
+    d.classList.toggle('active', i === currentIndex)
+  );
 }
 
 function openModal(product) {
-  const images = (product.media_base64 && product.media_base64.length > 0)
+  const images = (product.media_base64?.length > 0)
     ? product.media_base64
-    : ['https://placehold.co/600x600/0b0d17/d4af37?text=No+Image'];
+    : ['https://placehold.co/600x600/0e1017/c4a163?text=No+Image'];
 
   currentImages = images;
-  currentIndex = 0;
+  currentIndex  = 0;
 
-  // Build indicator dots
-  indicators.innerHTML = '';
-  images.forEach((_, i) => {
-    const dot = document.createElement('button');
-    dot.className = 'indicator-dot' + (i === 0 ? ' active' : '');
-    dot.addEventListener('click', () => showSlide(i));
-    indicators.appendChild(dot);
-  });
+  // Build slider
+  mediaViewer.innerHTML = `<img src="${images[0]}" alt="${product.name}" style="width:100%;height:100%;object-fit:cover;transition:opacity 0.15s ease;">`;
 
-  showSlide(0);
+  dotsWrap.innerHTML = '';
+  if (images.length > 1) {
+    images.forEach((_, i) => {
+      const dot = document.createElement('button');
+      dot.className = 'slide-dot' + (i === 0 ? ' active' : '');
+      dot.addEventListener('click', () => goSlide(i));
+      dotsWrap.appendChild(dot);
+    });
+    prevBtn.style.display = 'flex';
+    nextBtn.style.display = 'flex';
+  } else {
+    prevBtn.style.display = 'none';
+    nextBtn.style.display = 'none';
+  }
 
-  // Fill details
-  document.getElementById('modal-category').textContent   = product.category || '';
-  document.getElementById('modal-name').textContent       = product.name;
-  document.getElementById('modal-price').textContent      = `₹${Number(product.price).toLocaleString('en-IN')}`;
-  document.getElementById('modal-description').textContent = product.description || '';
+  // Fill info
+  document.getElementById('modal-category').textContent    = product.category || '';
+  document.getElementById('modal-name').textContent        = product.name;
+  document.getElementById('modal-price').textContent       = `₹${Number(product.price).toLocaleString('en-IN')}`;
+  document.getElementById('modal-description').textContent = product.description || 'No description provided.';
 
-  // Build WhatsApp links
-  const waText = encodeURIComponent(`Hi, I'm interested in the *${product.name}* listed on Urban Drip.\nPrice: ₹${Number(product.price).toLocaleString('en-IN')}\nPlease let me know if it's available.`);
+  // WhatsApp links
+  const waText = encodeURIComponent(
+    `Hi! I'm interested in the *${product.name}* from Urban Drip.\nPrice: ₹${Number(product.price).toLocaleString('en-IN')}\nPlease let me know if it's available. 🙏`
+  );
   document.getElementById('modal-wa-1').href = `https://wa.me/${PHONE_1}?text=${waText}`;
   document.getElementById('modal-wa-2').href = `https://wa.me/${PHONE_2}?text=${waText}`;
 
@@ -69,26 +105,30 @@ function closeModal() {
   document.body.style.overflow = '';
 }
 
-// Nav button events
-prevBtn.addEventListener('click', (e) => { e.stopPropagation(); showSlide(currentIndex - 1); });
-nextBtn.addEventListener('click', (e) => { e.stopPropagation(); showSlide(currentIndex + 1); });
-closeBtn.addEventListener('click', closeModal);
-modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+prevBtn?.addEventListener('click', (e) => { e.stopPropagation(); goSlide(currentIndex - 1); });
+nextBtn?.addEventListener('click', (e) => { e.stopPropagation(); goSlide(currentIndex + 1); });
+closeBtn?.addEventListener('click', closeModal);
+modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 document.addEventListener('keydown', (e) => {
-  if (!modal.classList.contains('active')) return;
-  if (e.key === 'Escape') closeModal();
-  if (e.key === 'ArrowLeft')  showSlide(currentIndex - 1);
-  if (e.key === 'ArrowRight') showSlide(currentIndex + 1);
+  if (!modal?.classList.contains('active')) return;
+  if (e.key === 'Escape')      closeModal();
+  if (e.key === 'ArrowLeft')   goSlide(currentIndex - 1);
+  if (e.key === 'ArrowRight')  goSlide(currentIndex + 1);
 });
 
-// ─── Products Grid ────────────────────────────────────────────────────────────
+// ── Products ────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  const grid = document.getElementById('products-grid');
+  const grid  = document.getElementById('products-grid');
+  const count = document.getElementById('product-count');
   if (!grid) return;
 
-  try {
-    grid.innerHTML = '<div class="loader"></div>';
+  // Loading state
+  grid.innerHTML = `
+    <div class="loader-wrap">
+      <div class="spinner"></div>
+    </div>`;
 
+  try {
     const { data: products, error } = await supabase
       .from('products')
       .select('*')
@@ -96,36 +136,46 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (error) throw error;
 
-    let allProducts = products || [];
+    let all = products || [];
 
-    const renderProducts = (list) => {
+    const render = (list) => {
       grid.innerHTML = '';
-      if (!list || list.length === 0) {
-        grid.innerHTML = '<p class="page-subtitle" style="grid-column:1/-1;text-align:center;">No products found.</p>';
+      if (count) count.textContent = list.length > 0 ? `${list.length} item${list.length !== 1 ? 's' : ''}` : '';
+
+      if (list.length === 0) {
+        grid.innerHTML = `<div class="empty-state">
+          <p style="font-size:2.5rem;margin-bottom:0.5rem;">🏷️</p>
+          <p>No products in this category yet.</p>
+        </div>`;
         return;
       }
 
-      list.forEach(product => {
+      list.forEach((product, i) => {
         const card = document.createElement('div');
-        card.className = 'glass-card product-card';
-        card.style.cursor = 'pointer';
+        card.className = 'p-card';
+        card.style.animationDelay = `${i * 0.05}s`;
 
-        const imageUrl = (product.media_base64 && product.media_base64.length > 0)
+        const imgSrc = (product.media_base64?.length > 0)
           ? product.media_base64[0]
-          : 'https://placehold.co/600x400/0b0d17/d4af37?text=No+Image';
+          : 'https://placehold.co/400x500/0e1017/c4a163?text=No+Image';
 
         card.innerHTML = `
-          <div class="product-image-container product-media-wrapper">
-            <img src="${imageUrl}" alt="${product.name}" class="product-image" loading="lazy">
-            ${product.category ? `<span class="product-category product-category-tag">${product.category}</span>` : ''}
-          </div>
-          <div class="product-card-info">
-            <h3 class="product-title product-card-title">${product.name}</h3>
-            <p class="product-desc product-card-description">${product.description || ''}</p>
-            <div class="product-footer product-card-footer">
-              <span class="product-price product-card-price">₹${Number(product.price).toLocaleString('en-IN')}</span>
-              <span class="view-details-indicator">
+          <div class="p-card-img-wrap">
+            <img src="${imgSrc}" alt="${product.name}" class="p-card-img" loading="lazy">
+            ${product.category ? `<span class="p-card-cat">${product.category}</span>` : ''}
+            <div class="p-card-overlay">
+              <span class="p-card-cta">
                 View Details
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9,18 15,12 9,6"/></svg>
+              </span>
+            </div>
+          </div>
+          <div class="p-card-body">
+            <h3 class="p-card-name">${product.name}</h3>
+            <p class="p-card-desc">${product.description || ''}</p>
+            <div class="p-card-footer">
+              <span class="p-card-price">₹${Number(product.price).toLocaleString('en-IN')}</span>
+              <span class="p-card-arrow">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9,18 15,12 9,6"/></svg>
               </span>
             </div>
@@ -137,22 +187,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     };
 
-    renderProducts(allProducts);
+    render(all);
 
-    // Category filter
-    const filters = document.getElementById('category-filters');
-    if (filters) {
-      filters.addEventListener('click', (e) => {
-        if (!e.target.classList.contains('filter-btn')) return;
-        filters.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
-        const f = e.target.dataset.filter;
-        renderProducts(f === 'all' ? allProducts : allProducts.filter(p => p.category === f));
+    // ── Filtering (nav + filter bar both work) ──
+    const allFilterBtns = document.querySelectorAll('.nav-filter-btn, .filter-pill');
+
+    allFilterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        // sync active state on all filter buttons
+        document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll(`[data-filter="${btn.dataset.filter}"]`).forEach(b => b.classList.add('active'));
+
+        const f = btn.dataset.filter;
+        render(f === 'all' ? all : all.filter(p => p.category === f));
       });
-    }
+    });
 
   } catch (err) {
-    console.error('Error fetching products:', err);
-    grid.innerHTML = '<p class="page-subtitle" style="grid-column:1/-1;color:var(--danger);">Failed to load products.</p>';
+    console.error('Error:', err);
+    grid.innerHTML = `<div class="empty-state" style="color:#f87171;">Failed to load products. Check your Supabase connection.</div>`;
   }
 });
