@@ -1034,3 +1034,47 @@ footer {
 .admin-table tr:hover {
   background: hsla(240, 8%, 15%, 0.2);
 }
+
+/* ── Modal WhatsApp Buttons ── */
+.modal-wa-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 1.5rem;
+}
+
+.modal-wa-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.modal-wa-btn {
+  width: 100%;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1rem 1.5rem;
+  border-radius: 14px;
+  font-size: 1rem;
+}
+
+.modal-wa-btn-2 {
+  background: hsl(142, 55%, 35%);
+  box-shadow: 0 4px 20px hsla(142, 55%, 35%, 0.35);
+}
+
+.modal-wa-btn-2:hover {
+  background: hsl(142, 60%, 28%);
+  box-shadow: 0 6px 25px hsla(142, 55%, 35%, 0.5);
+}
+
+/* ── Logo ── */
+.logo-img {
+  height: 56px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
