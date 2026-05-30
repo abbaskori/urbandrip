@@ -52,11 +52,11 @@ function openModal(product) {
   // Fill details
   document.getElementById('modal-category').textContent   = product.category || '';
   document.getElementById('modal-name').textContent       = product.name;
-  document.getElementById('modal-price').textContent      = `$${Number(product.price).toLocaleString()}`;
+  document.getElementById('modal-price').textContent      = `₹${Number(product.price).toLocaleString('en-IN')}`;
   document.getElementById('modal-description').textContent = product.description || '';
 
   // Build WhatsApp links
-  const waText = encodeURIComponent(`Hi, I'm interested in the *${product.name}* listed on Urban Drip.\nPrice: $${Number(product.price).toLocaleString()}\nPlease let me know if it's available.`);
+  const waText = encodeURIComponent(`Hi, I'm interested in the *${product.name}* listed on Urban Drip.\nPrice: ₹${Number(product.price).toLocaleString('en-IN')}\nPlease let me know if it's available.`);
   document.getElementById('modal-wa-1').href = `https://wa.me/${PHONE_1}?text=${waText}`;
   document.getElementById('modal-wa-2').href = `https://wa.me/${PHONE_2}?text=${waText}`;
 
@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <h3 class="product-title product-card-title">${product.name}</h3>
             <p class="product-desc product-card-description">${product.description || ''}</p>
             <div class="product-footer product-card-footer">
-              <span class="product-price product-card-price">$${Number(product.price).toLocaleString()}</span>
+              <span class="product-price product-card-price">₹${Number(product.price).toLocaleString('en-IN')}</span>
               <span class="view-details-indicator">
                 View Details
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9,18 15,12 9,6"/></svg>

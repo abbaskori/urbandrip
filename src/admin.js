@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Extract Price
       const priceInput = document.getElementById('price');
-      const priceRegex = /(?:price|rs\.?|\$|₹)\s*[:\-]?\s*([\d,]+(?:\.\d+)?)/i;
+      const priceRegex = /(?:price|rs\.?|mrp|\$|₹)\s*[:\-]?\s*([\d,]+(?:\.\d+)?)/i;
       const priceMatch = text.match(priceRegex);
       if (priceMatch) {
         priceInput.value = priceMatch[1].replace(/,/g, '');
