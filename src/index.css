@@ -129,6 +129,47 @@ button { cursor: pointer; border: none; background: none; font-family: var(--san
   box-shadow: 0 6px 22px var(--green-glow);
 }
 
+@media (max-width: 600px) {
+  .admin-body {
+    font-size: 0.9rem;
+  }
+  .admin-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .admin-main {
+    padding: 1rem;
+  }
+  .admin-card {
+    margin: 0.5rem 0;
+    padding: 1rem;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+  .form-control,
+  .file-upload-wrapper {
+    width: 100%;
+    max-width: none;
+  }
+  .btn-submit {
+    width: 100%;
+    padding: 0.75rem;
+  }
+  #preview-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  #preview-container img {
+    max-width: 80px;
+    height: auto;
+  }
+}
+
 @media (max-width: 700px) {
   .nav-links { display: none; }
   .nav-wa-btn { padding: 0.5rem 0.9rem; font-size: 0.8rem; }
