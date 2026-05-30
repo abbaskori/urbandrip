@@ -23,7 +23,7 @@ themeToggle?.addEventListener('click', () => {
 });
 initTheme();
 const navbar = document.getElementById('navbar');
-const navbar = document.getElementById('navbar');
+// duplicate navbar declaration removed
 window.addEventListener('scroll', () => {
   navbar?.classList.toggle('scrolled', window.scrollY > 40);
 }, { passive: true });
