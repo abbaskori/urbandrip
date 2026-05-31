@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
   
   if (!form) return;
   
+  const submitBtn = form.querySelector('button[type="submit"]');
+  
   let base64Images = [];
 
   const waPaste = document.getElementById('wa-paste');
@@ -88,7 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    const submitBtn = form.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Saving...';
     
