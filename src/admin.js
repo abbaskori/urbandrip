@@ -131,7 +131,67 @@ document.addEventListener('DOMContentLoaded', () => {
       statusMessage.textContent = 'Failed to save product: ' + err.message;
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Add Product';
+       submitBtn.textContent = 'Add Product';
+
+  // Load and render product list
+  const productListContainer = document.getElementById('product-list');
+  const productListContent = document.querySelector('#product-list .product-list-content');
+
+  async function loadProducts() {
+    const { data, error } = await supabase.from('products').select().order('id', { ascending: false });
+    if (error) {
+      console.error('Error loading products:', error);
+      return;
+    }
+    renderProducts(data);
+  }
+
+  function renderProducts(products) {
+    if (!productListContent) return;
+    productListContent.innerHTML = '';
+    products.forEach(p => {
+      const item = document.createElement('div');
+      item.className = 'product-item';
+      item.dataset.id = p.id;
+      const imagesHtml = (p.media_base64 || []).map(src => `<img src="${src}" class="product-thumb" alt="Product image">`).join('');
+      item.innerHTML = `
+        <h3>${p.name}</h3>
+        <p>${p.category} – ₹${p.price}</p>
+        <p>${p.description}</p>
+        <div class="product-images">${imagesHtml}</div>
+        <button class="btn-edit">Edit</button>
+        <button class="btn-delete">Delete</button>
+      `;
+      productListContent.appendChild(item);
+    });
+  }
+
+  // Edit and Delete handlers
+  productListContent?.addEventListener('click', async e => {
+    if (e.target.classList.contains('btn-edit')) {
+      const item = e.target.closest('.product-item');
+      const id = item.dataset.id;
+      // Fetch product details
+      const { data, error } = await supabase.from('products').select().eq('id', id).single();
+      if (error) return console.error('Fetch for edit error:', error);
+      document.getElementById('name').value = data.name;
+      document.getElementById('category').value = data.category;
+      document.getElementById('price').value = data.price;
+      document.getElementById('description').value = data.description;
+      document.getElementById('product-id').value = data.id;
+      submitBtn.textContent = 'Update Product';
+    }
+    if (e.target.classList.contains('btn-delete')) {
+      const item = e.target.closest('.product-item');
+      const id = item.dataset.id;
+      const { error } = await supabase.from('products').delete().eq('id', id);
+      if (error) console.error('Delete error:', error);
+      else loadProducts();
+    }
+  });
+
+  // Initial load of products
+  loadProducts();
     }
   });
 });
