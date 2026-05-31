@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (waPaste) waPaste.value = '';
       base64Images = [];
       previewContainer.innerHTML = '';
-      
+      loadProducts();
     } catch (err) {
       console.error('Error saving product:', err);
       statusMessage.className = 'status-message error';
