@@ -157,14 +157,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const item = document.createElement('div');
       item.className = 'product-item';
       item.dataset.id = p.id;
-      const imagesHtml = (p.media_base64 || []).map(src => `<img src="${src}" class="product-thumb" alt="Product image">`).join('');
       item.innerHTML = `
-        <h3>${p.name}</h3>
-        <p>${p.category} – ₹${p.price}</p>
-        <p>${p.description}</p>
-        <div class="product-images">${imagesHtml}</div>
-        <button class="btn-edit">Edit</button>
-        <button class="btn-delete">Delete</button>
+        <h3 class="item-title">${p.name}</h3>
+        <div class="item-actions">
+          <button class="btn-edit">Edit</button>
+          <button class="btn-delete">Delete</button>
+        </div>
       `;
       productListContent.appendChild(item);
     });
