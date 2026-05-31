@@ -131,7 +131,10 @@ document.addEventListener('DOMContentLoaded', () => {
       statusMessage.textContent = 'Failed to save product: ' + err.message;
     } finally {
       submitBtn.disabled = false;
-       submitBtn.textContent = 'Add Product';
+      submitBtn.textContent = 'Add Product';
+    }
+  });
+
 
   // Load and render product list
   const productListContainer = document.getElementById('product-list');
@@ -192,6 +195,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initial load of products
   loadProducts();
-    }
-  });
 });
