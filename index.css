@@ -1110,4 +1110,16 @@ footer {
 .product-item button {
   padding: 0.4rem 0.75rem;
   font-size: 0.85rem;
+  border-radius: 6px;
+  font-weight: 500;
+}
+.btn-edit {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+}
+.btn-delete {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
 }
